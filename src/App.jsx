@@ -9,7 +9,7 @@
  * 5. 新增 Savings + Settings 页面
  */
 
-import { useState, createContext, useContext } from "react";
+import { useState, createContext, useContext, useEffect } from "react";
 import { AuthProvider, useAuth } from "./AuthContext";
 import AuthPages from "./AuthPages";
 import Dashboard from "./Dashboard";
@@ -130,104 +130,286 @@ function App() {
 }
 
 // ─── Navbar ───────────────────────────────────────────────────────────────────
+/**
+ * 手机响应式 Navbar：
+ * - 桌面（>768px）：横排所有链接
+ * - 手机（≤768px）：只显示 Logo + 右边图标，hamburger 点开后显示全屏抽屉菜单
+ */
 function Navbar({ page, setPage, isDark, openLogin }) {
-  const { toggle }          = useTheme();
-  const { user, profile, logout } = useAuth();
-  const [dropOpen, setDropOpen]   = useState(false);
+  const { toggle }                    = useTheme();
+  const { user, profile, logout }     = useAuth();
+  const [dropOpen, setDropOpen]       = useState(false);
+  const [menuOpen, setMenuOpen]       = useState(false); // 手机汉堡菜单
+  const [isMobile, setIsMobile]       = useState(window.innerWidth <= 768);
+
+  // 监听视窗宽度变化
+  useEffect(() => {
+    const handler = () => {
+      setIsMobile(window.innerWidth <= 768);
+      if (window.innerWidth > 768) setMenuOpen(false);
+    };
+    window.addEventListener("resize", handler);
+    return () => window.removeEventListener("resize", handler);
+  }, []);
 
   const handleLogout = async () => {
     await logout();
     setPage("home");
     setDropOpen(false);
+    setMenuOpen(false);
+  };
+
+  const navigate = (id) => {
+    setPage(id);
+    setMenuOpen(false);
+    setDropOpen(false);
   };
 
   return (
-    <nav style={{ position: "sticky", top: 0, zIndex: 100, background: "var(--surface)", borderBottom: "1px solid var(--border)", backdropFilter: "blur(12px)" }}>
-      <div style={{ maxWidth: 1200, margin: "0 auto", display: "flex", alignItems: "center", gap: 8, height: 60, padding: "0 24px" }}>
+    <>
+      <nav style={{
+        position: "sticky", top: 0, zIndex: 200,
+        background: "var(--surface)",
+        borderBottom: "1px solid var(--border)",
+        backdropFilter: "blur(12px)",
+      }}>
+        <div style={{
+          maxWidth: 1200, margin: "0 auto",
+          display: "flex", alignItems: "center",
+          height: 56, padding: "0 16px", gap: 8,
+        }}>
 
-        {/* Logo */}
-        <span
-          onClick={() => setPage("home")}
-          style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: 20, color: "var(--accent)", letterSpacing: "-0.5px", cursor: "pointer", marginRight: 8, flexShrink: 0 }}
-        >
-          DevPortfolio
-        </span>
+          {/* ── Logo ── */}
+          <span
+            onClick={() => navigate("home")}
+            style={{
+              fontFamily: "'Syne', sans-serif", fontWeight: 800,
+              fontSize: 18, color: "var(--accent)",
+              letterSpacing: "-0.5px", cursor: "pointer", flexShrink: 0,
+            }}
+          >
+            DevPortfolio
+          </span>
 
-        {/* Nav links */}
-        <div style={{ display: "flex", gap: 2, flex: 1, flexWrap: "wrap" }}>
-          {PAGES.map(p => {
-            const locked = p.auth && !user;
-            return (
+          {/* ── Desktop nav links ── */}
+          {!isMobile && (
+            <div style={{ display: "flex", gap: 2, flex: 1, marginLeft: 8 }}>
+              {PAGES.map(p => {
+                const locked = p.auth && !user;
+                return (
+                  <button
+                    key={p.id}
+                    onClick={() => locked ? openLogin() : navigate(p.id)}
+                    title={locked ? "Login required" : p.label}
+                    style={{
+                      background: page === p.id ? "var(--accent)" : "transparent",
+                      color: page === p.id ? "#fff" : locked ? "var(--border)" : "var(--muted)",
+                      border: "none", borderRadius: 8,
+                      padding: "6px 12px", cursor: locked ? "not-allowed" : "pointer",
+                      fontFamily: "'DM Sans', sans-serif", fontSize: 13,
+                      fontWeight: page === p.id ? 600 : 400,
+                      transition: "all 0.2s", display: "flex", alignItems: "center", gap: 4,
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {p.label}
+                    {locked && <span style={{ fontSize: 9 }}>🔒</span>}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          {/* ── Spacer on mobile ── */}
+          {isMobile && <div style={{ flex: 1 }} />}
+
+          {/* ── Right side: dark mode + user/login ── */}
+          <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+
+            {/* Dark mode toggle */}
+            <button
+              onClick={toggle}
+              style={{
+                background: "var(--card)", border: "1px solid var(--border)",
+                borderRadius: 20, padding: "5px 10px",
+                cursor: "pointer", color: "var(--text)", fontSize: 14,
+              }}
+            >
+              {isDark ? "☀️" : "🌙"}
+            </button>
+
+            {/* User avatar / Sign In */}
+            {user ? (
+              <div style={{ position: "relative" }}>
+                <button
+                  onClick={() => setDropOpen(v => !v)}
+                  style={{
+                    background: "var(--card)", border: "1px solid var(--border)",
+                    borderRadius: 20, padding: "3px 8px 3px 3px",
+                    cursor: "pointer", display: "flex", alignItems: "center", gap: 6,
+                  }}
+                >
+                  <img
+                    src={profile?.avatar || ""}
+                    alt="avatar"
+                    style={{ width: 26, height: 26, borderRadius: "50%", objectFit: "cover", background: "var(--border)" }}
+                  />
+                  {/* 手机只显示头像，不显示用户名 */}
+                  {!isMobile && (
+                    <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text)" }}>
+                      {profile?.username || "User"}
+                    </span>
+                  )}
+                  <span style={{ color: "var(--muted)", fontSize: 9 }}>▼</span>
+                </button>
+
+                {dropOpen && (
+                  <div style={{
+                    position: "absolute", right: 0, top: "calc(100% + 8px)",
+                    background: "var(--surface)", border: "1px solid var(--border)",
+                    borderRadius: 12, minWidth: 170,
+                    boxShadow: "var(--shadow)", zIndex: 999, overflow: "hidden",
+                  }}>
+                    <div style={{ padding: "12px 16px", borderBottom: "1px solid var(--border)" }}>
+                      <p style={{ fontSize: 13, fontWeight: 700 }}>{profile?.username}</p>
+                      <p style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}>{profile?.email}</p>
+                    </div>
+                    <DropItem onClick={() => { navigate("settings"); setDropOpen(false); }}>⚙️ Settings</DropItem>
+                    <DropItem onClick={handleLogout} danger>🚪 Sign Out</DropItem>
+                  </div>
+                )}
+              </div>
+            ) : (
               <button
-                key={p.id}
-                onClick={() => locked ? openLogin() : setPage(p.id)}
-                title={locked ? "Login required" : p.label}
+                onClick={openLogin}
                 style={{
-                  background: page === p.id ? "var(--accent)" : "transparent",
-                  color: page === p.id ? "#fff" : locked ? "var(--border)" : "var(--muted)",
-                  border: "none", borderRadius: 8, padding: "7px 13px", cursor: locked ? "not-allowed" : "pointer",
-                  fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: page === p.id ? 600 : 400,
-                  transition: "all 0.2s", display: "flex", alignItems: "center", gap: 5,
+                  background: "var(--accent)", color: "#fff", border: "none",
+                  borderRadius: 20, padding: "6px 14px",
+                  cursor: "pointer", fontSize: 13, fontWeight: 700,
+                  whiteSpace: "nowrap",
                 }}
               >
-                {p.label}
-                {locked && <span style={{ fontSize: 10 }}>🔒</span>}
+                Sign In
               </button>
-            );
-          })}
-        </div>
+            )}
 
-        {/* Right side */}
-        <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
-          {/* Dark mode */}
-          <button onClick={toggle}
-            style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 20, padding: "5px 12px", cursor: "pointer", color: "var(--text)", fontSize: 15 }}>
-            {isDark ? "☀️" : "🌙"}
-          </button>
-
-          {user ? (
-            <div style={{ position: "relative" }}>
+            {/* ── Hamburger (mobile only) ── */}
+            {isMobile && (
               <button
-                onClick={() => setDropOpen(v => !v)}
-                style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 20, padding: "4px 10px 4px 4px", cursor: "pointer", display: "flex", alignItems: "center", gap: 8 }}
+                onClick={() => setMenuOpen(v => !v)}
+                style={{
+                  background: "var(--card)", border: "1px solid var(--border)",
+                  borderRadius: 8, padding: "6px 8px",
+                  cursor: "pointer", color: "var(--text)", fontSize: 16,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  width: 36, height: 36,
+                }}
               >
-                <img
-                  src={profile?.avatar || ""}
-                  alt="avatar"
-                  style={{ width: 28, height: 28, borderRadius: "50%", objectFit: "cover", background: "var(--border)" }}
-                />
-                <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text)" }}>{profile?.username || "User"}</span>
-                <span style={{ color: "var(--muted)", fontSize: 10 }}>▼</span>
+                {menuOpen ? "✕" : "☰"}
               </button>
-
-              {dropOpen && (
-                <div style={{
-                  position: "absolute", right: 0, top: "calc(100% + 8px)",
-                  background: "var(--surface)", border: "1px solid var(--border)",
-                  borderRadius: 12, minWidth: 160, boxShadow: "var(--shadow)", zIndex: 999,
-                  overflow: "hidden",
-                }}>
-                  <div style={{ padding: "12px 16px", borderBottom: "1px solid var(--border)" }}>
-                    <p style={{ fontSize: 13, fontWeight: 700 }}>{profile?.username}</p>
-                    <p style={{ fontSize: 12, color: "var(--muted)" }}>{profile?.email}</p>
-                  </div>
-                  <DropItem onClick={() => { setPage("settings"); setDropOpen(false); }}>⚙️ Settings</DropItem>
-                  <DropItem onClick={handleLogout} danger>🚪 Sign Out</DropItem>
-                </div>
-              )}
-            </div>
-          ) : (
-            <button
-              onClick={openLogin}
-              style={{ background: "var(--accent)", color: "#fff", border: "none", borderRadius: 20, padding: "7px 18px", cursor: "pointer", fontSize: 13, fontWeight: 700 }}
-            >
-              Sign In
-            </button>
-          )}
+            )}
+          </div>
         </div>
-      </div>
+      </nav>
 
-    </nav>
+      {/* ── Mobile Drawer Menu ── */}
+      {isMobile && menuOpen && (
+        <>
+          {/* Backdrop */}
+          <div
+            onClick={() => setMenuOpen(false)}
+            style={{
+              position: "fixed", inset: 0, zIndex: 150,
+              background: "rgba(0,0,0,0.5)",
+            }}
+          />
+          {/* Drawer */}
+          <div style={{
+            position: "fixed", top: 56, left: 0, right: 0,
+            zIndex: 160,
+            background: "var(--surface)",
+            borderBottom: "1px solid var(--border)",
+            padding: "12px 0 20px",
+            boxShadow: "0 8px 32px rgba(0,0,0,0.3)",
+            animation: "slideDown 0.2s ease",
+          }}>
+            {/* User info strip (if logged in) */}
+            {user && (
+              <div style={{
+                display: "flex", alignItems: "center", gap: 12,
+                padding: "8px 20px 16px",
+                borderBottom: "1px solid var(--border)", marginBottom: 8,
+              }}>
+                <img src={profile?.avatar || ""} alt="" style={{ width: 40, height: 40, borderRadius: "50%", objectFit: "cover", border: "2px solid var(--accent)" }} />
+                <div>
+                  <p style={{ fontWeight: 700, fontSize: 15 }}>{profile?.username}</p>
+                  <p style={{ color: "var(--muted)", fontSize: 12 }}>{profile?.email}</p>
+                </div>
+              </div>
+            )}
+
+            {/* Nav items */}
+            {PAGES.map(p => {
+              const locked = p.auth && !user;
+              const active = page === p.id;
+              return (
+                <button
+                  key={p.id}
+                  onClick={() => locked ? (openLogin(), setMenuOpen(false)) : navigate(p.id)}
+                  style={{
+                    display: "flex", alignItems: "center", gap: 12,
+                    width: "100%", padding: "13px 20px",
+                    background: active ? "var(--accent)18" : "transparent",
+                    border: "none", borderLeft: `3px solid ${active ? "var(--accent)" : "transparent"}`,
+                    color: locked ? "var(--border)" : active ? "var(--accent)" : "var(--text)",
+                    cursor: locked ? "not-allowed" : "pointer",
+                    fontSize: 15, fontWeight: active ? 700 : 400,
+                    textAlign: "left", transition: "all 0.15s",
+                  }}
+                >
+                  <span style={{ width: 20, textAlign: "center" }}>{p.icon}</span>
+                  {p.label}
+                  {locked && <span style={{ fontSize: 11, marginLeft: "auto", color: "var(--muted)" }}>🔒 Login</span>}
+                </button>
+              );
+            })}
+
+            {/* Settings + Sign out (if logged in) */}
+            {user && (
+              <>
+                <div style={{ height: 1, background: "var(--border)", margin: "8px 0" }} />
+                <button
+                  onClick={() => navigate("settings")}
+                  style={{ display: "flex", alignItems: "center", gap: 12, width: "100%", padding: "13px 20px", background: "transparent", border: "none", color: "var(--text)", cursor: "pointer", fontSize: 15, textAlign: "left" }}
+                >
+                  <span style={{ width: 20, textAlign: "center" }}>⚙️</span>
+                  Settings
+                </button>
+                <button
+                  onClick={handleLogout}
+                  style={{ display: "flex", alignItems: "center", gap: 12, width: "100%", padding: "13px 20px", background: "transparent", border: "none", color: "var(--accent2)", cursor: "pointer", fontSize: 15, textAlign: "left" }}
+                >
+                  <span style={{ width: 20, textAlign: "center" }}>🚪</span>
+                  Sign Out
+                </button>
+              </>
+            )}
+
+            {/* Sign In button (if not logged in) */}
+            {!user && (
+              <div style={{ padding: "12px 20px 0" }}>
+                <button
+                  onClick={() => { openLogin(); setMenuOpen(false); }}
+                  style={{ width: "100%", background: "var(--accent)", color: "#fff", border: "none", borderRadius: 12, padding: "13px", cursor: "pointer", fontSize: 15, fontWeight: 700 }}
+                >
+                  Sign In / Register
+                </button>
+              </div>
+            )}
+          </div>
+        </>
+      )}
+    </>
   );
 }
 
@@ -238,8 +420,8 @@ function DropItem({ onClick, children, danger }) {
       style={{
         display: "block", width: "100%", padding: "10px 16px",
         background: "transparent", border: "none", textAlign: "left",
-        color: danger ? "var(--accent2)" : "var(--text)", cursor: "pointer", fontSize: 13,
-        transition: "background 0.15s",
+        color: danger ? "var(--accent2)" : "var(--text)",
+        cursor: "pointer", fontSize: 13, transition: "background 0.15s",
       }}
       onMouseEnter={e => e.currentTarget.style.background = "var(--card)"}
       onMouseLeave={e => e.currentTarget.style.background = "transparent"}
@@ -350,13 +532,33 @@ function GlobalStyles() {
       body { background: var(--bg); }
       button { font-family: 'DM Sans', sans-serif; }
       input, textarea, select { font-family: 'DM Sans', sans-serif; }
+
       .fade-in { animation: fadeIn 0.45s ease forwards; }
       @keyframes fadeIn { from { opacity:0; transform:translateY(14px); } to { opacity:1; transform:none; } }
+      @keyframes slideDown { from { opacity:0; transform:translateY(-8px); } to { opacity:1; transform:none; } }
+
       .card-hover { transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease; }
       .card-hover:hover { transform: translateY(-4px); }
+
       ::-webkit-scrollbar { width: 5px; }
       ::-webkit-scrollbar-track { background: var(--surface); }
       ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+      /* ── Mobile tweaks ── */
+      @media (max-width: 768px) {
+        main { padding: 20px 14px !important; }
+        .mobile-stack { grid-template-columns: 1fr !important; }
+        .recharts-wrapper { overflow: hidden; }
+        button { min-height: 36px; }
+
+        /* Transaction form: 2 cols on tablet, 1 on phone */
+        .txn-form-grid { grid-template-columns: 1fr 1fr !important; }
+      }
+
+      @media (max-width: 480px) {
+        main { padding: 16px 12px !important; }
+        .txn-form-grid { grid-template-columns: 1fr !important; }
+      }
     `}</style>
   );
 }

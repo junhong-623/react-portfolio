@@ -121,7 +121,7 @@ export default function Dashboard() {
       </div>
 
       {/* ── Charts Row ── */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }} className="mobile-stack">
 
         {/* Area Chart — 单指标趋势 */}
         <ChartCard title="Trend Over Time" subtitle={`Showing: ${metric}`}>

@@ -142,7 +142,7 @@ export default function Savings() {
 
       {/* Charts */}
       {transactions.length > 0 && (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }} className="mobile-stack">
 
           {/* Balance Trend */}
           <ChartCard title="Balance Trend" subtitle="Cumulative net balance">
@@ -264,7 +264,7 @@ function TransactionForm({ onAdd }) {
   return (
     <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 16, padding: "22px 26px" }}>
       <p style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, marginBottom: 18 }}>New Transaction</p>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 12 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 12 }} className="mobile-stack txn-form-grid">
 
         {/* Type */}
         <div>
@@ -296,7 +296,7 @@ function TransactionForm({ onAdd }) {
         )}
 
         {/* Note */}
-        <div style={{ gridColumn: form.type === "expense" ? "auto" : "3 / 5" }}>
+        <div>
           <label style={{ fontSize: 12, color: "var(--muted)", display: "block", marginBottom: 6 }}>Note (optional)</label>
           <input value={form.note} onChange={e => set("note", e.target.value)} placeholder="e.g. Groceries at AEON" style={inputStyle} />
         </div>
