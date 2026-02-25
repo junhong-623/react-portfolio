@@ -1,25 +1,22 @@
 {
   "name": "react-portfolio-showcase",
-  "version": "1.0.0",
-  "description": "Multi-module React portfolio: Dashboard, Task Manager, Job Search, Onboarding Wizard",
+  "version": "2.0.0",
+  "description": "Multi-module React + Firebase portfolio",
   "type": "module",
   "homepage": "https://junhong-623.github.io/react-portfolio",
-
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview",
-    "predeploy": "npm run build",
-    "deploy": "gh-pages -d build"
+    "dev":     "vite",
+    "build":   "vite build",
+    "preview": "vite preview"
   },
   "dependencies": {
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "recharts": "^2.10.0"
+    "react":        "^18.2.0",
+    "react-dom":    "^18.2.0",
+    "recharts":     "^2.10.0",
+    "firebase":     "^10.7.0"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.2.0",
-    "gh-pages": "^6.3.0",
-    "vite": "^5.0.0"
+    "vite":                 "^5.0.0"
   }
 }
