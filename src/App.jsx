@@ -60,11 +60,21 @@ export default function Root() {
 function App() {
   const [page, setPage]     = useState("home");
   const [isDark, setIsDark] = useState(true);
-  const [showLogin, setShowLogin] = useState(false); // 控制登录 modal
+  const [showLogin, setShowLogin] = useState(false);
   const { user }            = useAuth();
 
   const theme    = themes[isDark ? "dark" : "light"];
   const rootStyle = Object.fromEntries(Object.entries(theme));
+  const bgColor  = isDark ? "#0d0d14" : "#f2f1fa";
+
+  // 同步 html/body 背景色 + 浏览器 theme-color（手机状态栏 & 底部过拉区域）
+  useEffect(() => {
+    document.documentElement.style.background = bgColor;
+    document.body.style.background            = bgColor;
+    // theme-color meta 控制 Android Chrome 地址栏颜色
+    const meta = document.getElementById("theme-color-meta");
+    if (meta) meta.setAttribute("content", bgColor);
+  }, [isDark, bgColor]);
 
   // 如果访问需要 auth 的页面但未登录 → 留在 home
   const safePage = PAGES.find(p => p.id === page)?.auth && !user ? "home" : page;
@@ -81,7 +91,7 @@ function App() {
   return (
     <ThemeContext.Provider value={{ isDark, toggle: () => setIsDark(d => !d), theme }}>
       <div style={{ ...rootStyle, minHeight: "100vh", background: "var(--bg)", color: "var(--text)", fontFamily: "'DM Sans', sans-serif", transition: "background 0.3s, color 0.3s" }}>
-        <GlobalStyles />
+        <GlobalStyles isDark={isDark} />
         <Navbar page={safePage} setPage={setPage} isDark={isDark} openLogin={openLogin} />
         <main style={{ maxWidth: 1200, margin: "0 auto", padding: "32px 24px" }}>
           {safePage === "home"      && <HomePage setPage={setPage} openLogin={openLogin} />}
@@ -524,14 +534,31 @@ function HomePage({ setPage, openLogin }) {
 }
 
 // ─── Global Styles ────────────────────────────────────────────────────────────
-function GlobalStyles() {
+function GlobalStyles({ isDark }) {
+  const bg = isDark ? "#0d0d14" : "#f2f1fa";
   return (
     <style>{`
       @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap');
+
+      /* 告诉浏览器用深/浅色模式渲染原生控件（滚动条、select等） */
+      :root { color-scheme: ${isDark ? "dark" : "light"}; }
+
       *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-      body { background: var(--bg); }
+
+      /* html + body 背景跟随主题 → 修复手机过拉时的白色背景 */
+      html, body {
+        background: ${bg};
+        min-height: 100%;
+        overscroll-behavior-y: none;
+      }
+
       button { font-family: 'DM Sans', sans-serif; }
-      input, textarea, select { font-family: 'DM Sans', sans-serif; }
+
+      /* font-size 16px 防止 iOS 在 focus input 时自动放大页面 */
+      input, textarea, select {
+        font-family: 'DM Sans', sans-serif;
+        font-size: 16px;
+      }
 
       .fade-in { animation: fadeIn 0.45s ease forwards; }
       @keyframes fadeIn { from { opacity:0; transform:translateY(14px); } to { opacity:1; transform:none; } }
@@ -544,20 +571,18 @@ function GlobalStyles() {
       ::-webkit-scrollbar-track { background: var(--surface); }
       ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 
-      /* ── Mobile tweaks ── */
       @media (max-width: 768px) {
         main { padding: 20px 14px !important; }
         .mobile-stack { grid-template-columns: 1fr !important; }
         .recharts-wrapper { overflow: hidden; }
         button { min-height: 36px; }
-
-        /* Transaction form: 2 cols on tablet, 1 on phone */
         .txn-form-grid { grid-template-columns: 1fr 1fr !important; }
       }
 
       @media (max-width: 480px) {
         main { padding: 16px 12px !important; }
         .txn-form-grid { grid-template-columns: 1fr !important; }
+        input, textarea, select { font-size: 16px !important; }
       }
     `}</style>
   );
