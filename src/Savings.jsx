@@ -20,17 +20,18 @@ import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from "recharts";
+import { useI18n } from "./i18n";
 
-// 消费分类
 const CATEGORIES = ["Food", "Transport", "Shopping", "Bills", "Entertainment", "Health", "Other"];
 const CAT_COLORS  = ["#8b7cf8","#f87c8b","#7cf8c0","#f8c87c","#7cc4f8","#f8a87c","#c87cf8"];
 
 export default function Savings() {
   const { user } = useAuth();
+  const { t }    = useI18n();
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading]           = useState(true);
   const [showForm, setShowForm]         = useState(false);
-  const [filter, setFilter]             = useState("all"); // "all" | "income" | "expense"
+  const [filter, setFilter]             = useState("all");
 
   // 实时监听 savings/{uid}/transactions
   useEffect(() => {
@@ -110,29 +111,27 @@ export default function Savings() {
       {/* Header */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", flexWrap: "wrap", gap: 12 }}>
         <div>
-          <h2 style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: 28, marginBottom: 4 }}>Personal Savings</h2>
-          <p style={{ color: "var(--muted)", fontSize: 15 }}>Track your income & expenses</p>
+          <h2 style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: 28, marginBottom: 4 }}>{t("savings.title")}</h2>
+          <p style={{ color: "var(--muted)", fontSize: 15 }}>{t("savings.subtitle")}</p>
         </div>
-        <button
-          onClick={() => setShowForm(v => !v)}
+        <button onClick={() => setShowForm(v => !v)}
           style={{ background: showForm ? "var(--card)" : "var(--accent)", color: showForm ? "var(--muted)" : "#fff", border: showForm ? "1px solid var(--border)" : "none", borderRadius: 10, padding: "10px 22px", cursor: "pointer", fontWeight: 700, fontSize: 14 }}>
-          {showForm ? "✕ Close" : "+ Add Transaction"}
+          {showForm ? t("savings.close") : t("savings.openAdd")}
         </button>
       </div>
 
-      {/* Add Form — 不自动关闭，方便连续输入 */}
-      {showForm && <TransactionForm onAdd={addTxn} />}
+      {showForm && <TransactionForm onAdd={addTxn} t={t} />}
 
       {/* KPI Cards */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 16 }}>
         {[
-          { label: "Net Balance", value: stats.balance, color: stats.balance >= 0 ? "var(--accent3)" : "var(--accent2)", prefix: "$" },
-          { label: "Total Income",  value: stats.income,  color: "var(--accent3)", prefix: "$" },
-          { label: "Total Expense", value: stats.expense, color: "var(--accent2)", prefix: "$" },
-          { label: "Transactions",  value: transactions.length, color: "var(--accent)", prefix: "" },
+          { labelKey: "savings.balance",  value: stats.balance, color: stats.balance >= 0 ? "var(--accent3)" : "var(--accent2)", prefix: "$" },
+          { labelKey: "savings.income",   value: stats.income,  color: "var(--accent3)", prefix: "$" },
+          { labelKey: "savings.expense",  value: stats.expense, color: "var(--accent2)", prefix: "$" },
+          { labelKey: "savings.txCount",  value: transactions.length, color: "var(--accent)", prefix: "" },
         ].map((k, i) => (
           <div key={i} style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 14, padding: "18px 22px" }}>
-            <p style={{ color: "var(--muted)", fontSize: 13, marginBottom: 6 }}>{k.label}</p>
+            <p style={{ color: "var(--muted)", fontSize: 13, marginBottom: 6 }}>{t(k.labelKey)}</p>
             <p style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 24, color: k.color }}>
               {k.prefix}{typeof k.value === "number" ? k.value.toLocaleString("en", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : k.value}
             </p>
@@ -143,9 +142,7 @@ export default function Savings() {
       {/* Charts */}
       {transactions.length > 0 && (
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }} className="mobile-stack">
-
-          {/* Balance Trend */}
-          <ChartCard title="Balance Trend" subtitle="Cumulative net balance">
+          <ChartCard title={t("savings.balanceTrend")} subtitle={t("savings.balanceTrendSub")}>
             <ResponsiveContainer width="100%" height={200}>
               <AreaChart data={stats.balanceData}>
                 <defs>
@@ -163,8 +160,7 @@ export default function Savings() {
             </ResponsiveContainer>
           </ChartCard>
 
-          {/* Monthly Income vs Expense */}
-          <ChartCard title="Monthly Overview" subtitle="Income vs expenses by month">
+          <ChartCard title={t("savings.monthlyOverview")} subtitle={t("savings.monthlyOverviewSub")}>
             <ResponsiveContainer width="100%" height={200}>
               <BarChart data={stats.monthData} barSize={12}>
                 <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" />
@@ -177,9 +173,8 @@ export default function Savings() {
             </ResponsiveContainer>
           </ChartCard>
 
-          {/* Expense by Category */}
           {stats.catData.length > 0 && (
-            <ChartCard title="Spending by Category" subtitle="Expense breakdown">
+            <ChartCard title={t("savings.spendingCat")} subtitle={t("savings.spendingCatSub")}>
               <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
                 <ResponsiveContainer width={150} height={150}>
                   <PieChart>
@@ -207,12 +202,16 @@ export default function Savings() {
       {/* Transaction List */}
       <div>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-          <p style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 18 }}>Transactions</p>
+          <p style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 18 }}>{t("savings.transactions")}</p>
           <div style={{ display: "flex", gap: 4, background: "var(--card)", borderRadius: 10, padding: 4, border: "1px solid var(--border)" }}>
-            {["all", "income", "expense"].map(f => (
-              <button key={f} onClick={() => setFilter(f)}
-                style={{ background: filter === f ? "var(--accent)" : "transparent", color: filter === f ? "#fff" : "var(--muted)", border: "none", borderRadius: 7, padding: "5px 14px", cursor: "pointer", fontSize: 13, fontWeight: 500, transition: "all 0.18s", textTransform: "capitalize" }}>
-                {f}
+            {[
+              { key: "all",     label: t("savings.filterAll") },
+              { key: "income",  label: t("savings.income2")   },
+              { key: "expense", label: t("savings.expense2")  },
+            ].map(f => (
+              <button key={f.key} onClick={() => setFilter(f.key)}
+                style={{ background: filter === f.key ? "var(--accent)" : "transparent", color: filter === f.key ? "#fff" : "var(--muted)", border: "none", borderRadius: 7, padding: "5px 14px", cursor: "pointer", fontSize: 13, fontWeight: 500, transition: "all 0.18s" }}>
+                {f.label}
               </button>
             ))}
           </div>
@@ -221,13 +220,11 @@ export default function Savings() {
         {visible.length === 0 ? (
           <div style={{ textAlign: "center", padding: "40px 0", color: "var(--muted)" }}>
             <p style={{ fontSize: 32, marginBottom: 8 }}>💰</p>
-            <p>No transactions yet. Add one to get started!</p>
+            <p>{t("savings.noTxn")}</p>
           </div>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {visible.map(txn => (
-              <TxnRow key={txn.id} txn={txn} onDelete={() => deleteTxn(txn.id)} />
-            ))}
+            {visible.map(txn => <TxnRow key={txn.id} txn={txn} onDelete={() => deleteTxn(txn.id)} />)}
           </div>
         )}
       </div>
@@ -235,70 +232,61 @@ export default function Savings() {
   );
 }
 
-// ─── Transaction Form ─────────────────────────────────────────────────────────
-function TransactionForm({ onAdd }) {
+function TransactionForm({ onAdd, t }) {
   const [form, setForm]     = useState({ type: "expense", amount: "", category: "Food", note: "" });
   const [error, setError]   = useState("");
   const [adding, setAdding] = useState(false);
-  const [flash, setFlash]   = useState(""); // 短暂成功提示（"Saved!"）
+  const [flash, setFlash]   = useState("");
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
   const handleSubmit = async () => {
     const amt = parseFloat(form.amount);
-    if (!amt || amt <= 0) { setError("Please enter a valid amount"); return; }
+    if (!amt || amt <= 0) { setError(t("savings.amountError")); return; }
     setAdding(true); setError("");
     try {
       await onAdd({ ...form, amount: amt, category: form.type === "income" ? "Income" : form.category });
-      // 重置金额和备注，保留 type 和 category，方便连续输入同类交易
       setForm(f => ({ ...f, amount: "", note: "" }));
-      setFlash("✓ Saved!");
-      setTimeout(() => setFlash(""), 1800); // 1.8 秒后消失
-    } finally {
-      setAdding(false);
-    }
+      setFlash(t("savings.saved"));
+      setTimeout(() => setFlash(""), 1800);
+    } finally { setAdding(false); }
   };
 
   const inputStyle = { width: "100%", background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 10, padding: "10px 14px", color: "var(--text)", fontSize: 14, outline: "none" };
 
   return (
     <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 16, padding: "22px 26px" }}>
-      <p style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, marginBottom: 18 }}>New Transaction</p>
+      <p style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, marginBottom: 18 }}>{t("savings.newTxn")}</p>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 12 }} className="mobile-stack txn-form-grid">
-
-        {/* Type */}
         <div>
-          <label style={{ fontSize: 12, color: "var(--muted)", display: "block", marginBottom: 6 }}>Type</label>
+          <label style={{ fontSize: 12, color: "var(--muted)", display: "block", marginBottom: 6 }}>{t("savings.type")}</label>
           <div style={{ display: "flex", gap: 6 }}>
-            {["income", "expense"].map(t => (
-              <button key={t} type="button" onClick={() => set("type", t)}
-                style={{ flex: 1, background: form.type === t ? (t === "income" ? "var(--accent3)" : "var(--accent2)") : "var(--surface)", color: form.type === t ? "#000" : "var(--muted)", border: "1px solid var(--border)", borderRadius: 8, padding: "8px 4px", cursor: "pointer", fontSize: 12, fontWeight: 600, textTransform: "capitalize", transition: "all 0.18s" }}>
-                {t === "income" ? "↑ Income" : "↓ Expense"}
+            {["income", "expense"].map(tp => (
+              <button key={tp} type="button" onClick={() => set("type", tp)}
+                style={{ flex: 1, background: form.type === tp ? (tp === "income" ? "var(--accent3)" : "var(--accent2)") : "var(--surface)", color: form.type === tp ? "#000" : "var(--muted)", border: "1px solid var(--border)", borderRadius: 8, padding: "8px 4px", cursor: "pointer", fontSize: 12, fontWeight: 600, transition: "all 0.18s" }}>
+                {tp === "income" ? t("savings.income2") : t("savings.expense2")}
               </button>
             ))}
           </div>
         </div>
 
-        {/* Amount */}
         <div>
-          <label style={{ fontSize: 12, color: "var(--muted)", display: "block", marginBottom: 6 }}>Amount ($)</label>
+          <label style={{ fontSize: 12, color: "var(--muted)", display: "block", marginBottom: 6 }}>{t("savings.amount")}</label>
           <input type="number" min="0" step="0.01" value={form.amount} onChange={e => { set("amount", e.target.value); setError(""); }} placeholder="0.00" style={inputStyle} />
         </div>
 
-        {/* Category (only for expense) */}
         {form.type === "expense" && (
           <div>
-            <label style={{ fontSize: 12, color: "var(--muted)", display: "block", marginBottom: 6 }}>Category</label>
+            <label style={{ fontSize: 12, color: "var(--muted)", display: "block", marginBottom: 6 }}>{t("savings.category")}</label>
             <select value={form.category} onChange={e => set("category", e.target.value)} style={inputStyle}>
               {CATEGORIES.map(c => <option key={c}>{c}</option>)}
             </select>
           </div>
         )}
 
-        {/* Note */}
         <div>
-          <label style={{ fontSize: 12, color: "var(--muted)", display: "block", marginBottom: 6 }}>Note (optional)</label>
-          <input value={form.note} onChange={e => set("note", e.target.value)} placeholder="e.g. Groceries at AEON" style={inputStyle} />
+          <label style={{ fontSize: 12, color: "var(--muted)", display: "block", marginBottom: 6 }}>{t("savings.note")}</label>
+          <input value={form.note} onChange={e => set("note", e.target.value)} placeholder={t("savings.notePh")} style={inputStyle} />
         </div>
       </div>
 
@@ -307,14 +295,9 @@ function TransactionForm({ onAdd }) {
       <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 14 }}>
         <button onClick={handleSubmit} disabled={adding}
           style={{ background: "var(--accent)", color: "#fff", border: "none", borderRadius: 10, padding: "10px 28px", cursor: "pointer", fontWeight: 700, fontSize: 14, opacity: adding ? 0.7 : 1 }}>
-          {adding ? "Saving…" : "Save Transaction"}
+          {adding ? t("savings.saving") : t("savings.saveTxn")}
         </button>
-        {/* 成功 flash：短暂显示后消失，不关闭表单 */}
-        {flash && (
-          <span style={{ color: "var(--accent3)", fontWeight: 700, fontSize: 14, animation: "fadeIn 0.2s ease" }}>
-            {flash}
-          </span>
-        )}
+        {flash && <span style={{ color: "var(--accent3)", fontWeight: 700, fontSize: 14, animation: "fadeIn 0.2s ease" }}>{flash}</span>}
       </div>
     </div>
   );

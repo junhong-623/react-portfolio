@@ -15,8 +15,9 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
 } from "recharts";
 import { useTheme } from "./App";
+import { useI18n } from "./i18n";
 
-// ─── Mock 数据 ────────────────────────────────────────────────────────────────
+// ─── Mock data ────────────────────────────────────────────────────────────────
 const MONTHLY_DATA = [
   { month: "Jan", revenue: 42000, expenses: 28000, profit: 14000, users: 1200 },
   { month: "Feb", revenue: 51000, expenses: 31000, profit: 20000, users: 1450 },
@@ -29,36 +30,29 @@ const MONTHLY_DATA = [
 ];
 
 const CATEGORY_DATA = [
-  { name: "Engineering", value: 38, color: "#8b7cf8" },
-  { name: "Design",      value: 22, color: "#f87c8b" },
-  { name: "Marketing",   value: 18, color: "#7cf8c0" },
-  { name: "Operations",  value: 22, color: "#f8c87c" },
-];
-
-// KPI 卡片数据
-const KPI = [
-  { label: "Total Revenue",   value: "$584k",  change: "+18.2%", up: true },
-  { label: "Net Profit",      value: "$212k",  change: "+24.6%", up: true },
-  { label: "Active Users",    value: "14,230", change: "+9.1%",  up: true },
-  { label: "Churn Rate",      value: "2.4%",   change: "-0.8%",  up: false },
+  { nameKey: "Engineering", value: 38, color: "#8b7cf8" },
+  { nameKey: "Design",      value: 22, color: "#f87c8b" },
+  { nameKey: "Marketing",   value: 18, color: "#7cf8c0" },
+  { nameKey: "Operations",  value: 22, color: "#f8c87c" },
 ];
 
 export default function Dashboard() {
-  // 控制显示哪些月份（前 N 个月）
   const [monthRange, setMonthRange] = useState(8);
-  // 控制 BarChart 排序方式
-  const [sortBy, setSortBy] = useState("month"); // "month" | "revenue" | "profit"
-  // 控制显示哪个指标在 AreaChart
-  const [metric, setMetric] = useState("revenue");
-
+  const [sortBy,     setSortBy]     = useState("month");
+  const [metric,     setMetric]     = useState("revenue");
   const { isDark } = useTheme();
+  const { t }      = useI18n();
+
   const gridColor = isDark ? "#2a2a42" : "#e0ddf5";
   const textColor  = isDark ? "#6868a0" : "#8080b8";
 
-  /**
-   * useMemo：只有当 monthRange 或 sortBy 变化时才重新计算
-   * 避免每次 render 都重新 sort/slice（性能优化）
-   */
+  const KPI = [
+    { labelKey: "dash.kpi.revenue", value: "$584k",  change: "+18.2%", up: true  },
+    { labelKey: "dash.kpi.profit",  value: "$212k",  change: "+24.6%", up: true  },
+    { labelKey: "dash.kpi.users",   value: "14,230", change: "+9.1%",  up: true  },
+    { labelKey: "dash.kpi.churn",   value: "2.4%",   change: "-0.8%",  up: false },
+  ];
+
   const filteredData = useMemo(() => {
     const sliced = MONTHLY_DATA.slice(0, monthRange);
     if (sortBy === "month") return sliced;
@@ -67,20 +61,22 @@ export default function Dashboard() {
 
   const areaData = useMemo(() => MONTHLY_DATA.slice(0, monthRange), [monthRange]);
 
+  const METRICS = ["revenue", "expenses", "profit", "users"];
+  const SORT_OPTIONS = ["month", "revenue", "profit"];
+
   return (
     <div className="fade-in" style={{ display: "flex", flexDirection: "column", gap: 28 }}>
 
-      {/* ── 页面标题 ── */}
       <div>
-        <h2 style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: 28, marginBottom: 4 }}>Analytics Dashboard</h2>
-        <p style={{ color: "var(--muted)", fontSize: 15 }}>Financial overview & team breakdown</p>
+        <h2 style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: 28, marginBottom: 4 }}>{t("dash.title")}</h2>
+        <p style={{ color: "var(--muted)", fontSize: 15 }}>{t("dash.subtitle")}</p>
       </div>
 
-      {/* ── KPI Cards ── */}
+      {/* KPI Cards */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 16 }}>
         {KPI.map((k, i) => (
           <div key={i} style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 14, padding: "20px 24px" }}>
-            <p style={{ color: "var(--muted)", fontSize: 13, marginBottom: 6 }}>{k.label}</p>
+            <p style={{ color: "var(--muted)", fontSize: 13, marginBottom: 6 }}>{t(k.labelKey)}</p>
             <p style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 26, marginBottom: 4 }}>{k.value}</p>
             <span style={{ fontSize: 13, fontWeight: 600, color: k.up ? "var(--accent3)" : "var(--accent2)" }}>
               {k.up ? "▲" : "▼"} {k.change}
@@ -89,42 +85,35 @@ export default function Dashboard() {
         ))}
       </div>
 
-      {/* ── Controls ── */}
+      {/* Controls */}
       <div style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center" }}>
-        {/* 月份范围筛选 */}
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span style={{ color: "var(--muted)", fontSize: 13 }}>Months:</span>
+          <span style={{ color: "var(--muted)", fontSize: 13 }}>{t("dash.months")}</span>
           {[4, 6, 8].map(n => (
             <FilterBtn key={n} active={monthRange === n} onClick={() => setMonthRange(n)}>{n}M</FilterBtn>
           ))}
         </div>
-
-        {/* 排序按钮 */}
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span style={{ color: "var(--muted)", fontSize: 13 }}>Sort:</span>
-          {["month", "revenue", "profit"].map(s => (
+          <span style={{ color: "var(--muted)", fontSize: 13 }}>{t("dash.sort")}</span>
+          {SORT_OPTIONS.map(s => (
             <FilterBtn key={s} active={sortBy === s} onClick={() => setSortBy(s)}>
-              {s.charAt(0).toUpperCase() + s.slice(1)}
+              {t(`dash.${s}`)}
             </FilterBtn>
           ))}
         </div>
-
-        {/* 指标选择 */}
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginLeft: "auto" }}>
-          <span style={{ color: "var(--muted)", fontSize: 13 }}>Metric:</span>
-          {["revenue", "expenses", "profit", "users"].map(m => (
+          <span style={{ color: "var(--muted)", fontSize: 13 }}>{t("dash.metric")}</span>
+          {METRICS.map(m => (
             <FilterBtn key={m} active={metric === m} onClick={() => setMetric(m)}>
-              {m.charAt(0).toUpperCase() + m.slice(1)}
+              {t(`dash.${m}`)}
             </FilterBtn>
           ))}
         </div>
       </div>
 
-      {/* ── Charts Row ── */}
+      {/* Charts Row */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }} className="mobile-stack">
-
-        {/* Area Chart — 单指标趋势 */}
-        <ChartCard title="Trend Over Time" subtitle={`Showing: ${metric}`}>
+        <ChartCard title={t("dash.trend")} subtitle={t("dash.trendSub", { metric: t(`dash.${metric}`) })}>
           <ResponsiveContainer width="100%" height={220}>
             <AreaChart data={areaData}>
               <defs>
@@ -142,8 +131,7 @@ export default function Dashboard() {
           </ResponsiveContainer>
         </ChartCard>
 
-        {/* Bar Chart — 多指标对比 + 排序 */}
-        <ChartCard title="Revenue vs Expenses" subtitle="Sortable by revenue or profit">
+        <ChartCard title={t("dash.revVsExp")} subtitle={t("dash.revVsExpSub")}>
           <ResponsiveContainer width="100%" height={220}>
             <BarChart data={filteredData} barSize={14}>
               <CartesianGrid stroke={gridColor} strokeDasharray="3 3" />
@@ -157,24 +145,23 @@ export default function Dashboard() {
         </ChartCard>
       </div>
 
-      {/* ── Pie Chart ── */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
-        <ChartCard title="Team Distribution" subtitle="Headcount by department">
+      {/* Pie + Quick Stats */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }} className="mobile-stack">
+        <ChartCard title={t("dash.teamDist")} subtitle={t("dash.teamDistSub")}>
           <div style={{ display: "flex", alignItems: "center", gap: 24 }}>
             <ResponsiveContainer width={160} height={160}>
               <PieChart>
                 <Pie data={CATEGORY_DATA} cx="50%" cy="50%" innerRadius={45} outerRadius={72} dataKey="value" strokeWidth={0}>
                   {CATEGORY_DATA.map((d, i) => <Cell key={i} fill={d.color} />)}
                 </Pie>
-                <Tooltip formatter={(v) => `${v}%`} />
+                <Tooltip content={<PieTooltip />} />
               </PieChart>
             </ResponsiveContainer>
-            {/* 图例 */}
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               {CATEGORY_DATA.map(d => (
-                <div key={d.name} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <div key={d.nameKey} style={{ display: "flex", alignItems: "center", gap: 8 }}>
                   <span style={{ width: 10, height: 10, borderRadius: "50%", background: d.color, flexShrink: 0 }} />
-                  <span style={{ fontSize: 13, color: "var(--muted)" }}>{d.name}</span>
+                  <span style={{ fontSize: 13, color: "var(--muted)" }}>{d.nameKey}</span>
                   <span style={{ fontSize: 13, fontWeight: 600, marginLeft: "auto" }}>{d.value}%</span>
                 </div>
               ))}
@@ -182,17 +169,16 @@ export default function Dashboard() {
           </div>
         </ChartCard>
 
-        {/* Summary stats */}
-        <ChartCard title="Quick Stats" subtitle="Last 8 months">
+        <ChartCard title={t("dash.quickStats")} subtitle={t("dash.quickStatsSub")}>
           <div style={{ display: "flex", flexDirection: "column", gap: 14, paddingTop: 8 }}>
             {[
-              { label: "Avg Monthly Revenue", value: `$${(MONTHLY_DATA.reduce((a,d) => a + d.revenue, 0) / MONTHLY_DATA.length / 1000).toFixed(0)}k` },
-              { label: "Best Month",           value: "August — $81k" },
-              { label: "Total Profit",          value: `$${(MONTHLY_DATA.reduce((a,d) => a + d.profit, 0) / 1000).toFixed(0)}k` },
-              { label: "User Growth",           value: "+100% since Jan" },
+              { labelKey: "dash.avgRevenue", value: `$${(MONTHLY_DATA.reduce((a,d) => a + d.revenue, 0) / MONTHLY_DATA.length / 1000).toFixed(0)}k` },
+              { labelKey: "dash.bestMonth",  value: "August — $81k" },
+              { labelKey: "dash.totalProfit",value: `$${(MONTHLY_DATA.reduce((a,d) => a + d.profit, 0) / 1000).toFixed(0)}k` },
+              { labelKey: "dash.userGrowth", value: "+100% since Jan" },
             ].map((s, i) => (
               <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: "1px solid var(--border)" }}>
-                <span style={{ color: "var(--muted)", fontSize: 14 }}>{s.label}</span>
+                <span style={{ color: "var(--muted)", fontSize: 14 }}>{t(s.labelKey)}</span>
                 <span style={{ fontWeight: 600, fontSize: 14 }}>{s.value}</span>
               </div>
             ))}
@@ -252,6 +238,24 @@ function CustomTooltip({ active, payload, label }) {
           </strong>
         </p>
       ))}
+    </div>
+  );
+}
+
+/** PieTooltip — Pie chart 专用：显示部门名称 + 色块 + 百分比 */
+function PieTooltip({ active, payload }) {
+  if (!active || !payload?.length) return null;
+  const d = payload[0];
+  return (
+    <div style={{
+      background: "var(--surface)", border: "1px solid var(--border)",
+      borderRadius: 10, padding: "9px 13px", fontSize: 13,
+      display: "flex", alignItems: "center", gap: 8,
+      boxShadow: "0 4px 16px rgba(0,0,0,0.2)",
+    }}>
+      <span style={{ width: 10, height: 10, borderRadius: "50%", background: d.payload.color, flexShrink: 0 }} />
+      <span style={{ color: "var(--text)", fontWeight: 600 }}>{d.payload.nameKey}</span>
+      <span style={{ color: "var(--accent)", fontWeight: 700 }}>{d.value}%</span>
     </div>
   );
 }
