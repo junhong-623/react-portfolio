@@ -61,6 +61,10 @@ const quickAmounts = (code) => {
 export default function CurrencyExchange() {
   const { t } = useI18n();
 
+  // Injected once — hides the flag overlay span on mobile (where <option> already renders emoji)
+  // and removes left padding on the select so it doesn't look indented without the overlay
+  const CSS = ``;
+
   // Converter pair
   const [from,      setFrom]      = useState("MYR");
   const [to,        setTo]        = useState("JPY");
@@ -170,6 +174,7 @@ export default function CurrencyExchange() {
 
   return (
     <div className="fade-in" style={{ display: "flex", flexDirection: "column", gap: 32, maxWidth: 900, margin: "0 auto" }}>
+      <style>{CSS}</style>
 
       {/* ── Header ── */}
       <div>
@@ -329,17 +334,14 @@ function ConverterSide({ value, onChange, currency, onCurrencyChange, exclude, t
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 8, minWidth: 0 }}>
 
-      {/* Selector */}
+      {/* Native select — emoji won't show on desktop (OS limitation), but works cleanly */}
       <div style={{ position: "relative" }}>
-        <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", fontSize: 20, lineHeight: 1, pointerEvents: "none" }}>
-          {info?.flag}
-        </span>
         <select
           value={currency}
           onChange={e => onCurrencyChange(e.target.value)}
           style={{
             width: "100%", background: "var(--surface)", border: "1px solid var(--border)",
-            borderRadius: 12, padding: "10px 36px 10px 44px",
+            borderRadius: 12, padding: "10px 36px 10px 14px",
             color: "var(--text)", fontSize: 14, fontWeight: 600,
             cursor: "pointer", outline: "none", appearance: "none", transition: "border-color 0.18s",
           }}
@@ -347,9 +349,7 @@ function ConverterSide({ value, onChange, currency, onCurrencyChange, exclude, t
           onBlur={e => e.target.style.borderColor = "var(--border)"}
         >
           {CURRENCIES.filter(c => c.code !== exclude).map(c => (
-            <option key={c.code} value={c.code}>
-              {c.flag}  {c.code}
-            </option>
+            <option key={c.code} value={c.code}>{c.flag} {c.code} — {t(c.nameKey)}</option>
           ))}
         </select>
         <span style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", color: "var(--muted)", fontSize: 11, pointerEvents: "none" }}>▾</span>
@@ -404,11 +404,23 @@ function AllRatesGrid({ to, setTo, t }) {
       <p style={{ fontSize: 13, color: "var(--muted)", marginBottom: 12 }}>
         🇲🇾 {t("cx.gridLabel")}
       </p>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: 10 }}>
+      <style>{`
+        .cx-rates-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+          gap: 10px;
+        }
+        @media (max-width: 768px) {
+          .cx-rates-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+          }
+        }
+      `}</style>
+      <div className="cx-rates-grid">
         {targets.map(c => {
           const rawRate = rates[c.code];
           const unit    = unitOf(c.code);
-          // Scale the rate to the display unit (e.g. show per 1000 JPY, not per 1 JPY)
           const displayR = rawRate != null ? fmt(rawRate * unit, 4) : null;
           const isActive = c.code === to;
 
@@ -460,93 +472,102 @@ function MoneyChangerTable({ data, currency, myrIsSelling, t }) {
 
   return (
     <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 16, overflow: "hidden" }}>
+      {/* Horizontal scroll wrapper for mobile */}
+      <div style={{ overflowX: "auto" }}>
+        <div style={{ minWidth: 480 }}>
 
-      {/* Table header */}
-      <div style={{
-        display: "grid", gridTemplateColumns: "1fr 120px 120px 130px",
-        padding: "11px 20px", background: "var(--surface)",
-        borderBottom: "1px solid var(--border)",
-      }}>
-        {[
-          t("cx.colChanger"),
-          `${t("cx.colBuy")} (MYR)${highlightCol === "buy"  ? " ★" : ""}`,
-          `${t("cx.colSell")} (MYR)${highlightCol === "sell" ? " ★" : ""}`,
-          t("cx.colUpdated"),
-        ].map((h, i) => (
-          <span key={i} style={{
-            fontSize: 11, fontWeight: 700, color: "var(--muted)",
-            textTransform: "uppercase", letterSpacing: "0.06em",
-            textAlign: i === 0 ? "left" : "right",
-          }}>
-            {h}
-          </span>
-        ))}
-      </div>
+        {/* Table header */}
+        <div style={{
+          display: "grid", gridTemplateColumns: "1fr 110px 110px 100px",
+          padding: "11px 20px", background: "var(--surface)",
+          borderBottom: "1px solid var(--border)",
+        }}>
+          {[
+            t("cx.colChanger"),
+            `${t("cx.colBuy")} (MYR)${highlightCol === "buy"  ? " ★" : ""}`,
+            `${t("cx.colSell")} (MYR)${highlightCol === "sell" ? " ★" : ""}`,
+            t("cx.colUpdated"),
+          ].map((h, i) => (
+            <span key={i} style={{
+              fontSize: 11, fontWeight: 700, color: "var(--muted)",
+              textTransform: "uppercase", letterSpacing: "0.06em",
+              textAlign: i === 0 ? "left" : "right",
+            }}>
+              {h}
+            </span>
+          ))}
+        </div>
 
-      {/* Data rows */}
-      {data.map((row, i) => {
-        const isBest    = i === 0;
-        const bestColor = highlightCol === "buy" ? "rgba(124,248,192,0.06)" : "rgba(139,124,248,0.06)";
-        return (
-          <div
-            key={row.name + i}
-            style={{
-              display: "grid", gridTemplateColumns: "1fr 120px 120px 130px",
-              padding: "13px 20px",
-              borderBottom: i < data.length - 1 ? "1px solid var(--border)" : "none",
-              background: isBest ? bestColor : "transparent",
-              transition: "background 0.15s",
-            }}
-            onMouseEnter={e => e.currentTarget.style.background = "var(--surface)"}
-            onMouseLeave={e => e.currentTarget.style.background = isBest ? bestColor : "transparent"}
-          >
-            {/* Name + unit badge */}
-            <div style={{ display: "flex", flexDirection: "column", gap: 3, justifyContent: "center" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
-                {isBest && (
-                  <span style={{
-                    fontSize: 9, fontWeight: 800, letterSpacing: "0.04em",
-                    background: highlightCol === "buy" ? "var(--accent3)" : "var(--accent)",
-                    color: highlightCol === "buy" ? "#000" : "#fff",
-                    borderRadius: 4, padding: "2px 6px",
-                  }}>
-                    {t("cx.best")}
-                  </span>
-                )}
-                <span style={{ fontSize: 13, fontWeight: 600 }}>{row.name}</span>
+        {/* Data rows */}
+        {data.map((row, i) => {
+          const isBest    = i === 0;
+          const bestColor = highlightCol === "buy" ? "rgba(124,248,192,0.06)" : "rgba(139,124,248,0.06)";
+          // Split "2026-02-27 8:55 AM" → ["2026-02-27", "8:55 AM"]
+          const [updDate, ...updTimeParts] = (row.updated || "").split(" ");
+          const updTime = updTimeParts.join(" ");
+          return (
+            <div
+              key={row.name + i}
+              style={{
+                display: "grid", gridTemplateColumns: "1fr 110px 110px 100px",
+                padding: "13px 20px",
+                borderBottom: i < data.length - 1 ? "1px solid var(--border)" : "none",
+                background: isBest ? bestColor : "transparent",
+                transition: "background 0.15s",
+              }}
+              onMouseEnter={e => e.currentTarget.style.background = "var(--surface)"}
+              onMouseLeave={e => e.currentTarget.style.background = isBest ? bestColor : "transparent"}
+            >
+              <div style={{ display: "flex", flexDirection: "column", gap: 3, justifyContent: "center" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+                  {isBest && (
+                    <span style={{
+                      fontSize: 9, fontWeight: 800, letterSpacing: "0.04em",
+                      background: highlightCol === "buy" ? "var(--accent3)" : "var(--accent)",
+                      color: highlightCol === "buy" ? "#000" : "#fff",
+                      borderRadius: 4, padding: "2px 6px",
+                    }}>
+                      {t("cx.best")}
+                    </span>
+                  )}
+                  <span style={{ fontSize: 13, fontWeight: 600 }}>{row.name}</span>
+                </div>
+                <span style={{ fontSize: 11, color: "var(--muted)" }}>
+                  {t("cx.per")} {row.unit} {flag} {currency}
+                </span>
               </div>
-              <span style={{ fontSize: 11, color: "var(--muted)" }}>
-                {t("cx.per")} {row.unit} {flag} {currency}
-              </span>
-            </div>
 
-            {/* Buy */}
-            <div style={{ textAlign: "right", alignSelf: "center" }}>
-              <span style={{
-                fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 14,
-                color: highlightCol === "buy" ? "var(--accent3)" : "var(--text)",
-              }}>
-                {row.buy.toFixed(4)}
-              </span>
-            </div>
+              {/* Buy — 2 decimals */}
+              <div style={{ textAlign: "right", alignSelf: "center" }}>
+                <span style={{
+                  fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 14,
+                  color: highlightCol === "buy" ? "var(--accent3)" : "var(--text)",
+                }}>
+                  {row.buy.toFixed(2)}
+                </span>
+              </div>
 
-            {/* Sell */}
-            <div style={{ textAlign: "right", alignSelf: "center" }}>
-              <span style={{
-                fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 14,
-                color: highlightCol === "sell" ? "var(--accent)" : "var(--text)",
-              }}>
-                {row.sell.toFixed(4)}
-              </span>
-            </div>
+              {/* Sell — 2 decimals */}
+              <div style={{ textAlign: "right", alignSelf: "center" }}>
+                <span style={{
+                  fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 14,
+                  color: highlightCol === "sell" ? "var(--accent)" : "var(--text)",
+                }}>
+                  {row.sell.toFixed(2)}
+                </span>
+              </div>
 
-            {/* Updated */}
-            <div style={{ textAlign: "right", alignSelf: "center" }}>
-              <span style={{ fontSize: 11, color: "var(--muted)" }}>{row.updated}</span>
+              {/* Updated — date on line 1, time on line 2 */}
+              <div style={{ textAlign: "right", alignSelf: "center" }}>
+                <div style={{ fontSize: 11, color: "var(--muted)", lineHeight: 1.5 }}>{updDate}</div>
+                <div style={{ fontSize: 11, color: "var(--muted)", lineHeight: 1.5 }}>{updTime}</div>
+              </div>
             </div>
-          </div>
-        );
-      })}
+          );
+        })}
+
+        </div>
+      </div>
 
       {/* Footer */}
       <div style={{ padding: "9px 20px", background: "var(--surface)", borderTop: "1px solid var(--border)" }}>

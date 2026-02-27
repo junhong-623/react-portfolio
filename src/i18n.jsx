@@ -44,6 +44,7 @@ const translations = {
     "mod.tasks.desc":      "Full CRUD synced to Firebase. Real-time across devices, per-user data.",
     "mod.jobs.desc":       "Real-time search with debounce, multi-filter UI, conditional rendering.",
     "mod.wizard.desc":     "Multi-step form with per-step validation and complex state flow.",
+    "mod.currency.desc":   "Live ECB exchange rates, bidirectional converter, and KL money changer comparison.",
 
     // Auth
     "auth.welcomeBack":   "Welcome back 👋",
@@ -358,6 +359,7 @@ const translations = {
     "mod.tasks.desc":      "完整 CRUD，与 Firebase 实时同步。多设备实时更新，数据隔离。",
     "mod.jobs.desc":       "防抖实时搜索、多条件筛选 UI、条件渲染。",
     "mod.wizard.desc":     "多步骤表单，逐步验证，复杂状态流程。",
+    "mod.currency.desc":   "实时 ECB 汇率、双向换算器，以及 KL 兑换商价格对比。",
 
     "auth.welcomeBack":   "欢迎回来 👋",
     "auth.createAccount": "创建账号",
@@ -668,6 +670,7 @@ const translations = {
     "mod.tasks.desc":      "完全なCRUDをFirebaseと同期。デバイス間でリアルタイム更新。",
     "mod.jobs.desc":       "デバウンスリアルタイム検索・複合フィルターUI・条件付きレンダリング。",
     "mod.wizard.desc":     "ステップごとのバリデーションと複雑な状態管理を持つ多段階フォーム。",
+    "mod.currency.desc":   "ECBリアルタイムレート・双方向換算・KL両替店レート比較。",
 
     "auth.welcomeBack":   "おかえりなさい 👋",
     "auth.createAccount": "アカウントを作成",
