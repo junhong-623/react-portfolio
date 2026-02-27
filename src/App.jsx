@@ -1,7 +1,7 @@
 /**
  * App.jsx — 主入口
  */
-import { useState, createContext, useContext, useEffect, lazy, Suspense } from "react";
+import { useState, createContext, useContext, useEffect, lazy, Suspense, startTransition } from "react";
 import { AuthProvider, useAuth } from "./AuthContext";
 import { useI18n, LANGUAGES } from "./i18n.jsx";
 
@@ -75,8 +75,19 @@ function App() {
   }, [isDark, bgColor]);
 
   const safePage           = PAGES.find(p => p.id === page)?.auth && !user ? "home" : page;
-  const handleLoginSuccess = () => { setShowLogin(false); setPage("home"); };
-  const openLogin          = () => setShowLogin(true);
+  // const handleLoginSuccess = () => { setShowLogin(false); setPage("home"); };
+  const handleLoginSuccess = () => {
+    startTransition(() => {
+      setShowLogin(false);
+      setPage("home");
+    });
+  };
+  // const openLogin          = () => setShowLogin(true);
+  const openLogin = () => {
+    startTransition(() => {
+      setShowLogin(true);
+    });
+  };
 
   return (
     <ThemeContext.Provider value={{ isDark, toggle: () => setIsDark(d => !d), theme }}>
@@ -139,8 +150,15 @@ function Navbar({ page, setPage, isDark, openLogin }) {
   }, [dropOpen]);
 
   const handleLogout = async () => { await logout(); setPage("home"); setDropOpen(false); setMenuOpen(false); };
-  const navigate     = (id) => { setPage(id); setMenuOpen(false); setDropOpen(false); };
+  // const navigate     = (id) => { setPage(id); setMenuOpen(false); setDropOpen(false); };
+  const navigate = (id) => {
+    startTransition(() => {
+      setPage(id);
+    });
 
+    setMenuOpen(false);
+    setDropOpen(false);
+  };
   return (
     <>
       <nav style={{ position:"sticky", top:0, zIndex:200, background:"var(--surface)", borderBottom:"1px solid var(--border)", backdropFilter:"blur(12px)" }}>
